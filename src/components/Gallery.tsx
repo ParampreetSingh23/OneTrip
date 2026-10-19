@@ -817,13 +817,13 @@ function SaveToPhotos({ token, ids, photos, onClose }: { token: string; ids: str
         className="w-full max-w-lg space-y-4 rounded-t-xl bg-canvas px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
       >
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-ink">{done ? "Share complete" : "Save to Photos"}</h2>
+          <h2 className="text-lg font-semibold text-ink">{done ? "All done" : "Save to Photos"}</h2>
           <p className="text-sm text-muted">
             {done
-              ? `${ids.length} photo${ids.length === 1 ? "" : "s"} sent to the share sheet.`
+              ? `If you tapped "Save ${ids.length === 1 ? "Image" : "Images"}", your ${ids.length === 1 ? "photo is" : `${ids.length} photos are`} in the Photos app now, in full quality.`
               : batches > 1
-                ? `Batch ${batch + 1} of ${batches}. In the share sheet, tap "Save ${Math.min(SHARE_BATCH, ids.length - batch * SHARE_BATCH)} Images".`
-                : `In the share sheet, tap "Save Image".`}
+                ? `Your iPhone saves up to ${SHARE_BATCH} at a time. Set ${batch + 1} of ${batches}: tap the button, then choose "Save ${Math.min(SHARE_BATCH, ids.length - batch * SHARE_BATCH)} Images".`
+                : `Tap the button, then choose "Save ${ids.length === 1 ? "Image" : `${ids.length} Images`}" in the menu that opens.`}
           </p>
         </div>
         {transfer && !done && (

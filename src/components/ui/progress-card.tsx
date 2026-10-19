@@ -6,7 +6,7 @@ import { formatBytes } from "../../lib/upload-client";
 type Status = "queued" | "uploading" | "downloading" | "complete" | "error" | "started" | "ready";
 const labels: Record<Status, string> = {
   queued: "Queued", uploading: "Uploading", downloading: "Downloading",
-  complete: "Complete", error: "Failed", started: "Download started", ready: "Ready to share",
+  complete: "Complete", error: "Failed", started: "Download started", ready: "Ready to save",
 };
 
 export function UploadProgressCard({
