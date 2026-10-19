@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- Auth (Better Auth core tables; field names must match better-auth) ----------
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  albums        Album[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ---------- Albums ----------
+
+enum AlbumStatus {
+  DRAFT // uploading; expiresAt = abandon deadline
+  ACTIVE // published; expiresAt = share expiry
+}
+
+model Album {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  tokenHash     String      @unique // sha256(share token): lookup for viewers
+  shareTokenEnc String // AES-GCM(share token): lets the owner see the link again
+  passwordHash  String? // scrypt, optional
+  status        AlbumStatus @default(DRAFT)
+  expiresAt     DateTime
+  createdAt     DateTime    @default(now())
+  assets        Asset[]
+
+  @@index([expiresAt])
+  @@index([userId, createdAt])
+}
+
+// R2 keys are derived from ids (see src/lib/r2.ts), not stored.
+model Asset {
+  id        String   @id @default(cuid())
+  albumId   String
+  album     Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  filename  String
+  mimeType  String
+  sizeBytes Int
+  hasThumb  Boolean  @default(false)
+  uploaded  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([albumId])
+}
