@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="out.css">
+<style>
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #fffaf0; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+  .scene, .abs { position: absolute; }
+  .scene { inset: 0; }
+  .phone { position: absolute; width: 414px; height: 868px; border-radius: 60px; background: #0a0a0a; padding: 12px; box-shadow: 0 40px 80px -30px rgba(26,58,58,.45), 0 0 0 2px #2a2a2a inset; }
+  .phone .screen { width: 390px; height: 844px; border-radius: 48px; overflow: hidden; position: relative; background: #fffaf0; }
+  .phone .notch { position: absolute; top: 12px; left: 50%; width: 120px; height: 34px; margin-left: -60px; border-radius: 20px; background: #0a0a0a; z-index: 50; }
+  .phone.android .notch { width: 16px; height: 16px; margin-left: -8px; top: 16px; border-radius: 50%; }
+  .phone.android { border-radius: 40px; } .phone.android .screen { border-radius: 30px; }
+  .laptop { position: absolute; }
+  .laptop .lid { background: #0a0a0a; border-radius: 22px 22px 0 0; padding: 16px 16px 0; }
+  .laptop .screen { width: 860px; height: 540px; overflow: hidden; position: relative; background: #fffaf0; border-radius: 6px 6px 0 0; }
+  .laptop .base { height: 22px; margin: 0 -50px; background: linear-gradient(#d9d4c4, #bdb8a8); border-radius: 0 0 18px 18px; }
+  .tap { position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: rgba(184,164,237,.55); border: 3px solid rgba(255,255,255,.9); z-index: 99; pointer-events: none; }
+  .ph { background-size: cover; background-position: center; }
+  .display { color: #0a0a0a; font-weight: 500; letter-spacing: -0.04em; line-height: 1.02; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- ============ 1. HOOK ============ -->
+  <div class="scene" id="s1">
+    <div class="abs" style="left:150px; top:300px; width:700px">
+      <div class="display" style="font-size:230px; font-variant-numeric: tabular-nums;"><span id="count">0</span></div>
+      <div class="display" style="font-size:96px; margin-top:6px">photos.</div>
+      <div id="s1sub" style="font-size:44px; color:#6a6a6a; margin-top:22px; letter-spacing:-0.02em">from one trip.</div>
+    </div>
+    <div class="abs" id="grid1" style="left:930px; top:110px; width:860px; display:grid; grid-template-columns:repeat(11, 1fr); gap:6px"></div>
+  </div>
+
+  <!-- ============ 2. PROBLEM ============ -->
+  <div class="scene" id="s2">
+    <div class="abs" style="left:0; right:0; top:250px; display:flex; justify-content:center; gap:28px" id="probs">
+      <div class="prob flex w-[440px] flex-col gap-6 rounded-xl bg-brand-lavender p-9 text-ink">
+        <span class="grid size-16 place-items-center rounded-lg bg-canvas/60"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="size-9"><circle cx="12" cy="12" r="3"/><path d="M7.8 16.2a6 6 0 0 1 0-8.4m8.4 0a6 6 0 0 1 0 8.4M5 19a10 10 0 0 1 0-14m14 0a10 10 0 0 1 0 14" stroke-linecap="round"/></svg></span>
+        <span><span class="block text-[34px] font-semibold tracking-tight">AirDrop</span><span class="mt-2 block text-[24px] text-ink/70">Stalled at photo 23.</span></span>
+        <span class="strike inline-flex w-fit items-center gap-2 rounded-full bg-error px-4 py-1.5 text-[20px] font-semibold text-white">✕ Failed</span>
+      </div>
+      <div class="prob flex w-[440px] flex-col gap-6 rounded-xl bg-brand-peach p-9 text-ink">
+        <span class="grid size-16 place-items-center rounded-lg bg-canvas/60"><img src="android.svg" width="40" height="40" alt=""></span>
+        <span><span class="block text-[34px] font-semibold tracking-tight">Android friends</span><span class="mt-2 block text-[24px] text-ink/70">Can’t AirDrop at all.</span></span>
+        <span class="strike inline-flex w-fit items-center gap-2 rounded-full bg-error px-4 py-1.5 text-[20px] font-semibold text-white">✕ Left out</span>
+      </div>
+      <div class="prob flex w-[440px] flex-col gap-6 rounded-xl bg-brand-mint p-9 text-ink">
+        <span class="grid size-16 place-items-center rounded-lg bg-canvas/60"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="size-9"><path d="M4 5h16v11H8l-4 4V5Z" stroke-linejoin="round"/></svg></span>
+        <span><span class="block text-[34px] font-semibold tracking-tight">Group chat</span><span class="mt-2 block text-[24px] text-ink/70">Squashed. Blurry.</span></span>
+        <span class="strike inline-flex w-fit items-center gap-2 rounded-full bg-error px-4 py-1.5 text-[20px] font-semibold text-white">✕ Compressed</span>
+      </div>
+    </div>
+    <div class="abs display" id="s2line" style="left:0; right:0; top:720px; text-align:center; font-size:72px">Sharing them shouldn’t be the hard part.</div>
+  </div>
+
+  <!-- ============ 3+4. UPLOAD ONCE / SHARE ONE LINK ============ -->
+  <div class="scene" id="s34">
+    <div class="abs" style="left:150px; top:350px; width:1040px">
+      <div class="flex items-center gap-4" id="brand3">
+        <img src="onetrip.svg" width="64" height="64" alt="">
+        <span class="text-[40px] font-semibold tracking-[-1.2px] text-ink">OneTrip</span>
+      </div>
+      <div class="relative" style="height:260px; margin-top:34px">
+        <div class="abs" id="h3">
+          <div class="display" style="font-size:128px">Upload once.</div>
+          <div style="font-size:40px; color:#6a6a6a; margin-top:26px; letter-spacing:-0.02em">Originals go up untouched.</div>
+        </div>
+        <div class="abs" id="h4">
+          <div class="display" style="font-size:128px">Share one link.</div>
+          <div style="font-size:40px; color:#6a6a6a; margin-top:26px; letter-spacing:-0.02em">No app or account for friends.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone" id="phone3" style="left:1290px; top:11px; transform-origin: top left">
+      <div class="screen">
+        <div class="notch"></div>
+        <!-- Uploader (src/components/Uploader.tsx) -->
+        <div class="abs inset-0 px-5 pt-16" id="upl">
+          <section class="flex flex-col gap-5">
+            <div class="space-y-3">
+              <div class="flex items-baseline justify-between gap-4">
+                <h1 class="text-2xl font-semibold tracking-tight text-ink">116 photos</h1>
+                <span class="text-sm text-muted"><span id="sent">0 MB</span> / 1.9 GB</span>
+              </div>
+              <div class="h-2 overflow-hidden rounded-full bg-surface-strong"><div class="h-full bg-ink" id="obar" style="width:0%"></div></div>
+              <div class="flex flex-wrap items-center gap-3 text-sm">
+                <span class="text-muted"><span id="done">0</span> uploaded</span>
+                <label class="inline-flex min-h-11 items-center rounded-md border border-hairline px-3 font-semibold text-ink">+ Add more</label>
+              </div>
+            </div>
+            <ul class="grid gap-2 rounded-lg" id="cards"></ul>
+            <div class="space-y-4 rounded-xl bg-surface-card p-5">
+              <label class="block space-y-2">
+                <span class="text-sm font-semibold text-ink">Collection name</span>
+                <div class="flex h-11 w-full items-center rounded-md border border-ink bg-canvas px-4 text-ink"><span id="typed"></span><span id="caret" class="ml-px inline-block h-5 w-[2px] bg-ink"></span></div>
+              </label>
+              <fieldset class="space-y-2">
+                <legend class="mb-2 text-sm font-semibold text-ink">Delete automatically after</legend>
+                <div class="grid grid-cols-3 gap-2">
+                  <span class="rounded-md border border-hairline bg-canvas py-3 text-center text-sm font-semibold text-ink">24 hours</span>
+                  <span class="rounded-md border border-ink bg-ink py-3 text-center text-sm font-semibold text-white">3 days</span>
+                  <span class="rounded-md border border-hairline bg-canvas py-3 text-center text-sm font-semibold text-ink">7 days</span>
+                </div>
+              </fieldset>
+            </div>
+          </section>
+          <div class="abs inset-x-0 bottom-0 border-t border-hairline bg-canvas/95 px-4 pt-3 pb-8">
+            <button id="createBtn" class="h-12 w-full rounded-md bg-surface-strong text-[15px] font-semibold text-muted">Uploading…</button>
+          </div>
+        </div>
+        <!-- ShareCard (src/components/Uploader.tsx) -->
+        <div class="abs inset-0 px-5 pt-24" id="share">
+          <section class="flex flex-col gap-6">
+            <div class="space-y-2">
+              <h1 class="text-[40px] leading-[1.05] font-medium tracking-[-1.5px] text-ink">Your link is ready</h1>
+              <p class="text-muted">Goa trip · 116 photos · deleted in 3 days</p>
+            </div>
+            <div class="space-y-3 rounded-xl bg-brand-teal p-5 text-white">
+              <p class="rounded-md bg-white/10 px-4 py-3 font-mono text-sm break-all">/a/7fK2mQ9xLwR4pZ8sVn3Hc1YtE0bJ6uDqXa5gTr2Wk9M</p>
+              <div class="grid grid-cols-2 gap-2">
+                <button id="copyBtn" class="h-11 rounded-md bg-canvas text-sm font-semibold text-ink">Copy link</button>
+                <button class="h-11 rounded-md border border-white/40 text-sm font-semibold">Share…</button>
+                <button class="col-span-2 h-11 rounded-md border border-white/40 text-sm font-semibold">Show QR code</button>
+              </div>
+            </div>
+            <ul class="space-y-2 text-sm text-muted">
+              <li>Anyone with this link can view and download these photos until they expire.</li>
+              <li>Originals are shared exactly as taken, including any location data stored in them.</li>
+            </ul>
+            <div class="flex flex-wrap gap-2">
+              <a class="inline-flex h-11 items-center rounded-md bg-primary px-5 text-sm font-semibold text-white">Open collection</a>
+              <a class="inline-flex h-11 items-center rounded-md border border-hairline px-5 text-sm font-semibold text-ink">My collections</a>
+            </div>
+          </section>
+        </div>
+        <div class="tap" id="tap3"></div>
+      </div>
+    </div>
+
+    <!-- landing-page card (src/app/page.tsx) -->
+    <div class="abs" id="devCard" style="left:150px; top:770px">
+      <div class="flex items-center gap-5 rounded-lg bg-brand-lavender px-7 py-6 text-ink">
+        <span class="flex shrink-0 items-center gap-3"><img src="apple.svg" width="30" height="30" alt=""><img src="android.svg" width="36" height="36" alt=""></span>
+        <span><span class="block text-[24px] font-semibold">iPhone &amp; Android</span><span class="mt-1 block text-[20px] text-ink/70">And your computer, too.</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 4b. COLLABORATE ============ -->
+  <div class="scene" id="s7">
+    <div class="abs" style="left:150px; top:330px; width:720px">
+      <div class="display" id="h7a" style="font-size:112px">Friends add theirs.</div>
+      <div id="h7b" style="font-size:40px; color:#6a6a6a; margin-top:30px; letter-spacing:-0.02em">Same link. Just a name.<br><span style="color:#1a3a3a; font-weight:600">No signup.</span></div>
+    </div>
+
+    <!-- owner: Collaborate sheet (Gallery.tsx CollaborateSheet) -->
+    <div class="phone" id="ownerPhone" style="left:880px; top:106px; transform-origin: top left">
+      <div class="screen">
+        <div class="notch"></div>
+        <section class="space-y-4 px-4 pt-14">
+          <div class="relative -mx-4 h-44 overflow-hidden bg-brand-teal">
+            <div class="cover7 ph absolute inset-0"></div>
+            <div class="absolute inset-0 bg-linear-to-t from-black/75 via-black/25 to-transparent"></div>
+            <div class="absolute inset-x-0 bottom-0 space-y-2 p-5 text-white">
+              <h1 class="text-[34px] leading-[1.05] font-medium tracking-[-1px]">Goa trip</h1>
+              <p class="text-sm text-white/85">116 photos · 1.4 GB · deleted in 3 days</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <span class="flex h-16 flex-col items-center justify-center gap-1 rounded-lg bg-primary text-sm font-semibold text-white">+ Add photos</span>
+            <span class="flex h-16 flex-col items-center justify-center gap-1 rounded-lg border border-hairline text-sm font-semibold text-ink">Share</span>
+            <span class="relative flex h-16 flex-col items-center justify-center gap-1 rounded-lg border border-hairline text-sm font-semibold text-ink">Collaborate<span id="collabDot" class="absolute top-2.5 right-2.5 size-2 rounded-full bg-brand-teal"></span></span>
+          </div>
+        </section>
+        <div id="backdrop7" class="abs inset-0 bg-ink/50"></div>
+        <div id="sheet7" class="abs inset-x-0 bottom-0 rounded-t-xl bg-canvas text-ink">
+          <div class="space-y-4 px-5 pt-5 pb-8">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-lg font-semibold">Collaborate</h2>
+              <span class="grid size-11 place-items-center rounded-md text-muted"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5"><path d="m6 6 12 12M6 18 18 6" stroke-linecap="round"/></svg></span>
+            </div>
+            <div id="switch7" class="flex w-full items-center justify-between gap-4 rounded-lg border border-hairline p-4 text-left">
+              <span class="space-y-0.5">
+                <span class="block font-semibold text-ink">Let friends add photos</span>
+                <span class="block text-sm text-muted" id="switchTxt">Off: the link is view and download only.</span>
+              </span>
+              <span id="track7" class="relative h-7 w-12 shrink-0 rounded-full bg-surface-strong"><span id="knob7" class="absolute top-1 left-1 size-5 rounded-full bg-white shadow"></span></span>
+            </div>
+            <div id="onBlock" style="overflow:hidden">
+              <div class="space-y-4">
+                <p class="text-sm text-muted">Send the same link or QR. Turning this off pauses new uploads; photos already added stay.</p>
+                <div class="flex items-center gap-4 rounded-lg border border-hairline p-3">
+                  <svg class="size-28 shrink-0 rounded-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 41 41" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h41v41H0z"/><path stroke="#0a0a0a" d="M2 2.5h7m3 0h9m1 0h9m1 0h7M2 3.5h1m5 0h1m3 0h1m5 0h1m1 0h2m1 0h1m3 0h4m1 0h1m5 0h1M2 4.5h1m1 0h3m1 0h1m1 0h1m1 0h1m3 0h1m1 0h1m1 0h7m2 0h1m2 0h1m1 0h3m1 0h1M2 5.5h1m1 0h3m1 0h1m1 0h2m5 0h1m3 0h2m2 0h5m2 0h1m1 0h3m1 0h1M2 6.5h1m1 0h3m1 0h1m1 0h1m2 0h3m1 0h2m1 0h3m2 0h1m1 0h1m4 0h1m1 0h3m1 0h1M2 7.5h1m5 0h1m1 0h2m1 0h3m1 0h1m2 0h1m1 0h2m5 0h1m2 0h1m5 0h1M2 8.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M10 9.5h1m1 0h4m1 0h1m5 0h3m3 0h1M2 10.5h1m1 0h5m2 0h5m1 0h1m2 0h11m1 0h5M4 11.5h2m1 0h1m1 0h1m7 0h3m5 0h1m4 0h2m3 0h1m1 0h1M3 12.5h2m2 0h4m1 0h1m1 0h3m5 0h1m1 0h1m3 0h2m1 0h1m1 0h1m2 0h3M2 13.5h2m2 0h1m2 0h1m5 0h1m2 0h1m1 0h1m2 0h3m2 0h4m1 0h1m4 0h1M2 14.5h5m1 0h2m2 0h2m4 0h2m2 0h1m3 0h7m1 0h2m1 0h2M3 15.5h1m3 0h1m3 0h2m1 0h1m3 0h2m1 0h1m2 0h3m1 0h1m1 0h1m2 0h1m3 0h1M3 16.5h3m1 0h4m4 0h1m1 0h1m1 0h1m2 0h3m4 0h2m1 0h4m2 0h1M6 17.5h2m2 0h1m5 0h2m1 0h2m2 0h2m3 0h2m2 0h3M2 18.5h2m3 0h3m3 0h3m2 0h1m4 0h1m3 0h1m3 0h2m3 0h2M4 19.5h2m7 0h1m2 0h2m2 0h1m1 0h2m3 0h4m2 0h1m1 0h3M2 20.5h2m1 0h2m1 0h1m1 0h1m1 0h1m1 0h1m2 0h3m1 0h1m2 0h1m1 0h1m2 0h3m3 0h1m1 0h2M5 21.5h1m1 0h1m1 0h1m1 0h1m1 0h2m1 0h2m3 0h6m2 0h2m2 0h1m4 0h1M2 22.5h2m1 0h2m1 0h1m1 0h1m1 0h1m1 0h1m1 0h3m2 0h2m1 0h1m1 0h4m1 0h2m1 0h3M3 23.5h1m1 0h1m3 0h2m2 0h2m7 0h1m2 0h1m4 0h1m4 0h1M3 24.5h2m1 0h4m1 0h1m3 0h1m1 0h1m2 0h1m1 0h1m1 0h1m1 0h1m1 0h2m2 0h4m1 0h2M3 25.5h5m5 0h1m8 0h1m5 0h1m4 0h2M3 26.5h6m1 0h4m2 0h1m3 0h6m1 0h8m1 0h3M2 27.5h3m2 0h1m1 0h1m3 0h2m2 0h2m4 0h1m1 0h2m3 0h1m1 0h2m1 0h1M2 28.5h1m2 0h4m2 0h1m1 0h1m1 0h1m3 0h2m1 0h1m1 0h1m1 0h1m2 0h1m1 0h3m2 0h3M2 29.5h1m6 0h7m2 0h1m1 0h1m2 0h1m1 0h2m1 0h1m1 0h3m1 0h2m1 0h2M2 30.5h1m1 0h1m1 0h1m1 0h1m3 0h2m1 0h1m2 0h3m2 0h2m1 0h9m1 0h3M10 31.5h6m1 0h3m1 0h3m1 0h1m4 0h1m3 0h2m1 0h2M2 32.5h7m6 0h1m1 0h1m1 0h1m3 0h1m2 0h3m1 0h1m1 0h1m1 0h1m1 0h3M2 33.5h1m5 0h1m1 0h1m1 0h2m1 0h1m1 0h1m1 0h3m1 0h2m1 0h1m1 0h1m1 0h1m3 0h2m1 0h1M2 34.5h1m1 0h3m1 0h1m1 0h3m2 0h4m4 0h1m4 0h7m1 0h1m1 0h1M2 35.5h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h1m1 0h1m2 0h1m1 0h1m1 0h2m1 0h3m1 0h2m1 0h2m2 0h1M2 36.5h1m1 0h3m1 0h1m1 0h2m2 0h2m1 0h2m2 0h1m4 0h1m1 0h1m2 0h1m5 0h2M2 37.5h1m5 0h1m5 0h1m1 0h2m2 0h5m3 0h1m1 0h1m3 0h1m3 0h1M2 38.5h7m1 0h1m1 0h4m1 0h3m1 0h2m4 0h3m4 0h1m2 0h2"/></svg>
+
+                  <div class="space-y-2 text-sm"><p class="text-muted">Friends can scan this with their phone camera.</p><span class="inline-flex h-10 items-center rounded-md border border-hairline px-3 font-semibold text-ink">Download QR</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <h3 class="text-sm font-semibold text-ink">Contributors</h3>
+              <ul class="divide-y divide-hairline rounded-lg border border-hairline">
+                <li class="flex items-center gap-3 px-4 py-3"><svg viewBox="0 0 40 40" width="32" height="32" class="shrink-0 rounded-full"><circle cx="20" cy="20" r="20" fill="hsl(276 70% 80%)"/><g transform="rotate(326 20 20)" fill="hsl(18 65% 62%)" opacity="0.9"><circle cx="8" cy="10" r="4"/><circle cx="32" cy="32" r="5"/></g><text x="20" y="21" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="600" fill="#0a0a0a">SA</text></svg><span class="min-w-0 flex-1 truncate font-medium text-ink">Sam (you)</span><span class="text-sm text-muted">116 photos</span></li>
+                <li class="contrib flex items-center gap-3 px-4 py-3" style="overflow:hidden"><svg viewBox="0 0 40 40" width="32" height="32" class="shrink-0 rounded-full"><circle cx="20" cy="20" r="20" fill="hsl(243 70% 80%)"/><g transform="rotate(355 20 20)" fill="hsl(319 65% 62%)" opacity="0.9"><rect x="-4" y="26" width="48" height="10"/></g><text x="20" y="21" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="600" fill="#0a0a0a">RI</text></svg><span class="min-w-0 flex-1 truncate font-medium text-ink">Riya</span><span class="text-sm text-muted">24 photos</span></li>
+                <li class="contrib flex items-center gap-3 px-4 py-3" style="overflow:hidden"><svg viewBox="0 0 40 40" width="32" height="32" class="shrink-0 rounded-full"><circle cx="20" cy="20" r="20" fill="hsl(191 70% 80%)"/><g transform="rotate(164 20 20)" fill="hsl(284 65% 62%)" opacity="0.9"><circle cx="8" cy="10" r="4"/><circle cx="32" cy="32" r="5"/></g><text x="20" y="21" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="600" fill="#0a0a0a">AR</text></svg><span class="min-w-0 flex-1 truncate font-medium text-ink">Arjun</span><span class="text-sm text-muted">18 photos</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="tap" id="tapO"></div>
+      </div>
+    </div>
+
+    <!-- guest: JoinCard → Add your photos (Gallery.tsx) -->
+    <div class="phone" id="guestPhone" style="left:1365px; top:62px; transform-origin: top left">
+      <div class="screen">
+        <div class="notch"></div>
+        <section class="space-y-4 px-4 pt-14">
+          <div class="relative -mx-4 h-48 overflow-hidden bg-brand-teal">
+            <div class="cover7 ph absolute inset-0"></div>
+            <div class="absolute inset-0 bg-linear-to-t from-black/75 via-black/25 to-transparent"></div>
+            <div class="absolute inset-x-0 bottom-0 space-y-2 p-5 text-white">
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold"><span class="size-1.5 rounded-full bg-brand-mint"></span> Shared album</span>
+              <h1 class="text-[34px] leading-[1.05] font-medium tracking-[-1px]">Goa trip</h1>
+              <p class="text-sm text-white/85" id="gMeta">116 photos · 1.4 GB · deleted in 3 days</p>
+            </div>
+          </div>
+          <div class="relative" style="height:236px">
+            <form id="joinCard" class="abs inset-x-0 top-0 space-y-4 rounded-xl bg-brand-lavender/35 p-5">
+              <div class="space-y-1">
+                <p class="text-lg font-semibold text-ink">Were you on this trip?</p>
+                <p class="text-sm text-body">Add your photos to “Goa trip”. Just your name, no account.</p>
+              </div>
+              <div class="flex gap-2">
+                <div class="flex h-12 min-w-0 flex-1 items-center rounded-md border border-ink bg-canvas px-4 text-ink"><span id="gName"></span><span id="gCaret" class="ml-px inline-block h-5 w-[2px] bg-ink"></span><span id="gPh" class="text-muted-soft">Your name</span></div>
+                <span id="joinBtn" class="flex h-12 shrink-0 items-center rounded-md bg-primary px-5 text-[15px] font-semibold text-white">Join trip</span>
+              </div>
+              <p class="text-xs text-muted">Just looking? Scroll down to view and download.</p>
+            </form>
+            <div id="guestActions" class="abs inset-x-0 top-0 space-y-4">
+              <div class="grid grid-cols-[1fr_auto] gap-2">
+                <span id="addBtn" class="flex h-14 items-center justify-center gap-2 rounded-lg bg-primary text-[15px] font-semibold text-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>Add your photos</span>
+                <span class="flex h-14 items-center justify-center gap-2 rounded-lg border border-hairline px-4 text-sm font-semibold text-ink">Invite</span>
+              </div>
+              <p class="inline-flex items-center gap-2 text-sm text-muted"><svg viewBox="0 0 40 40" width="22" height="22" class="shrink-0 rounded-full"><circle cx="20" cy="20" r="20" fill="hsl(243 70% 80%)"/><g transform="rotate(355 20 20)" fill="hsl(319 65% 62%)" opacity="0.9"><rect x="-4" y="26" width="48" height="10"/></g><text x="20" y="21" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="600" fill="#0a0a0a">RI</text></svg> Adding as <span class="font-semibold text-ink">Riya</span></p>
+              <div id="chips7" class="flex gap-2">
+                <span class="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-ink px-4 text-sm font-semibold text-white">Everyone · 140</span>
+                <span class="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-hairline pr-4 pl-1.5 text-sm font-semibold text-ink"><svg viewBox="0 0 40 40" width="28" height="28" class="shrink-0 rounded-full"><circle cx="20" cy="20" r="20" fill="hsl(276 70% 80%)"/><g transform="rotate(326 20 20)" fill="hsl(18 65% 62%)" opacity="0.9"><circle cx="8" cy="10" r="4"/><circle cx="32" cy="32" r="5"/></g><text x="20" y="21" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="600" fill="#0a0a0a">SA</text></svg>Sam · 116</span>
+                <span class="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-hairline pr-4 pl-1.5 text-sm font-semibold text-ink"><svg viewBox="0 0 40 40" width="28" height="28" class="shrink-0 rounded-full"><circle cx="20" cy="20" r="20" fill="hsl(243 70% 80%)"/><g transform="rotate(355 20 20)" fill="hsl(319 65% 62%)" opacity="0.9"><rect x="-4" y="26" width="48" height="10"/></g><text x="20" y="21" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="600" fill="#0a0a0a">RI</text></svg>You · 24</span>
+              </div>
+            </div>
+          </div>
+          <ul class="-mx-4 grid grid-cols-3 gap-0.5" id="gTiles"></ul>
+        </section>
+        <div id="gTray" class="abs inset-x-0 bottom-0 z-40 border-t border-hairline bg-canvas/95 px-4 pt-3 pb-8">
+          <div class="space-y-3 rounded-lg border border-hairline bg-canvas p-4 shadow-sm">
+            <div class="flex items-baseline justify-between gap-3">
+              <p class="text-sm font-semibold text-ink" id="trayTitle">Adding 24 photos…</p>
+              <span class="text-xs text-muted" id="traySize">0 MB / 81 MB</span>
+            </div>
+            <div class="h-2 overflow-hidden rounded-full bg-surface-strong"><div id="trayBar" class="h-full rounded-full bg-brand-teal"></div></div>
+            <p class="text-xs text-muted">Keep this page open. Originals upload in full quality.</p>
+          </div>
+        </div>
+        <div id="gToast" class="abs inset-x-0 top-14 z-50 flex justify-center px-4"><p class="rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white shadow-lg">24 photos added. Thanks, Riya!</p></div>
+        <div class="tap" id="tapG"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 5. ORIGINALS, ANY DEVICE ============ -->
+  <div class="scene" id="s5">
+    <div class="abs display" id="h5" style="left:0; right:0; top:58px; text-align:center; font-size:88px">Originals. On any phone.</div>
+    <div class="abs" id="dev1" style="left:100px; top:190px; transform-origin: top left"></div>
+    <div class="abs" id="dev2" style="left:540px; top:190px; transform-origin: top left"></div>
+    <div class="abs" id="dev3" style="left:985px; top:250px; transform-origin: top left"></div>
+  </div>
+
+  <!-- ============ 6. AUTO-DELETE + OUTRO ============ -->
+  <div class="scene" id="s6">
+    <div class="abs" id="grid6" style="left:410px; top:170px; width:1100px; display:grid; grid-template-columns:repeat(12, 1fr); gap:8px"></div>
+    <div class="abs" id="pill6" style="left:0; right:0; top:470px; display:flex; justify-content:center">
+      <div class="flex items-center gap-4 rounded-full bg-ink px-10 py-6 text-white shadow-2xl">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="size-12"><circle cx="12" cy="12" r="9"/><path id="hand" d="M12 7v5l3 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="text-[56px] font-medium tracking-[-1.5px]">Then it deletes itself.</span>
+      </div>
+    </div>
+    <div class="abs" id="end" style="left:0; right:0; top:330px; display:flex; flex-direction:column; align-items:center">
+      <div class="flex items-center gap-6">
+        <img src="onetrip.svg" width="128" height="128" alt="">
+        <span class="display" style="font-size:150px; font-weight:600; letter-spacing:-0.045em">OneTrip</span>
+      </div>
+      <div id="tag" style="font-size:48px; color:#3a3a3a; margin-top:46px; letter-spacing:-0.02em">Upload once. Share one link. <span style="color:#1a3a3a; font-weight:600">Deleted automatically.</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Gallery template (src/components/Gallery.tsx), filled per device -->
+<template id="galleryTpl">
+  <section class="space-y-4 px-4 pt-14">
+    <div class="relative -mx-4 h-56 overflow-hidden bg-brand-teal">
+      <div class="cover ph absolute inset-0"></div>
+      <div class="absolute inset-0 bg-linear-to-t from-black/75 via-black/25 to-transparent"></div>
+      <div class="absolute inset-x-0 bottom-0 space-y-2 p-5 text-white">
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold"><span class="size-1.5 rounded-full bg-brand-mint"></span> Shared album</span>
+        <h1 class="text-[34px] leading-[1.05] font-medium tracking-[-1px]">Goa trip</h1>
+        <p class="text-sm text-white/85">158 photos · 3 people · 2.4 GB · deleted in 3 days</p>
+      </div>
+    </div>
+    <div class="space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-lg font-semibold text-ink"><span class="nsel">0</span> selected</h2>
+        <div class="flex items-center gap-1">
+          <button class="h-10 rounded-md px-3 text-sm font-semibold text-muted">Select all</button>
+          <button class="h-10 rounded-md bg-ink px-4 text-sm font-semibold text-white">Done</button>
+        </div>
+      </div>
+      <div class="chips flex gap-2 overflow-hidden">
+        <span class="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-ink px-4 text-sm font-semibold text-white">Everyone · 158</span>
+        <span class="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-hairline pr-4 pl-1.5 text-sm font-semibold text-ink"><svg viewBox="0 0 40 40" width="28" height="28" class="shrink-0 rounded-full"><circle cx="20" cy="20" r="20" fill="hsl(276 70% 80%)"/><g transform="rotate(326 20 20)" fill="hsl(18 65% 62%)" opacity="0.9"><circle cx="8" cy="10" r="4"/><circle cx="32" cy="32" r="5"/></g><text x="20" y="21" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="600" fill="#0a0a0a">SA</text></svg>Sam · 116</span>
+        <span class="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-hairline pr-4 pl-1.5 text-sm font-semibold text-ink"><svg viewBox="0 0 40 40" width="28" height="28" class="shrink-0 rounded-full"><circle cx="20" cy="20" r="20" fill="hsl(243 70% 80%)"/><g transform="rotate(355 20 20)" fill="hsl(319 65% 62%)" opacity="0.9"><rect x="-4" y="26" width="48" height="10"/></g><text x="20" y="21" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="600" fill="#0a0a0a">RI</text></svg>Riya · 24</span>
+        <span class="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-hairline pr-4 pl-1.5 text-sm font-semibold text-ink"><svg viewBox="0 0 40 40" width="28" height="28" class="shrink-0 rounded-full"><circle cx="20" cy="20" r="20" fill="hsl(191 70% 80%)"/><g transform="rotate(164 20 20)" fill="hsl(284 65% 62%)" opacity="0.9"><circle cx="8" cy="10" r="4"/><circle cx="32" cy="32" r="5"/></g><text x="20" y="21" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="600" fill="#0a0a0a">AR</text></svg>Arjun · 18</span>
+      </div>
+      <ul class="tiles -mx-4 grid grid-cols-3 gap-0.5"></ul>
+    </div>
+  </section>
+  <div class="absolute inset-x-0 bottom-0 z-40 border-t border-hairline bg-canvas/95 px-4 pt-3 pb-6">
+    <button class="primary h-12 w-full rounded-md bg-primary text-[15px] font-semibold text-white"></button>
+    <button class="zip h-9 w-full text-sm font-semibold text-muted">Download 12 as one ZIP file</button>
+  </div>
+</template>
+
+<script>
+// ---------- fake trip photos (fictional, procedurally drawn) ----------
+function rng(seed) { return () => (seed = (seed * 16807) % 2147483647) / 2147483647; }
+const SKIES = [["#ffb084","#ff6b5a","#5a2a4a"],["#a4d4f5","#e8f4ff","#ffe7c2"],["#ffcf7a","#ff8a5c","#7a3b5c"],["#1a2a4a","#3a4a7a","#e8b94a"],["#bfe6ff","#8ecbe8","#f5f0e0"],["#ffd3b0","#ffb6c9","#b8a4ed"]];
+const GROUNDS = ["#1a3a3a","#2f6b5a","#e8c99a","#3a5a7a","#4a3a2a","#a4d4c5"];
+function makePhoto(i) {
+  const r = rng(i * 9973 + 7), c = document.createElement("canvas"); c.width = c.height = 240;
+  const g = c.getContext("2d"), sky = SKIES[i % SKIES.length];
+  const lg = g.createLinearGradient(0, 0, 0, 240); lg.addColorStop(0, sky[0]); lg.addColorStop(.6, sky[1]); lg.addColorStop(1, sky[2]);
+  g.fillStyle = lg; g.fillRect(0, 0, 240, 240);
+  g.fillStyle = "rgba(255,250,235,.85)"; g.beginPath(); g.arc(40 + r() * 160, 50 + r() * 70, 14 + r() * 22, 0, 7); g.fill();
+  const kind = Math.floor(r() * 3), horizon = 130 + r() * 50;
+  g.fillStyle = GROUNDS[(i * 7) % GROUNDS.length];
+  if (kind === 0) { g.beginPath(); g.moveTo(0, 240); for (let x = 0; x <= 240; x += 20) g.lineTo(x, horizon - Math.sin(x / 30 + i) * 30 - r() * 20); g.lineTo(240, 240); g.fill(); }
+  else if (kind === 1) { g.fillRect(0, horizon, 240, 240); g.fillStyle = "rgba(255,255,255,.35)"; for (let k = 0; k < 4; k++) g.fillRect(r() * 200, horizon + 10 + k * 18, 40 + r() * 60, 3); g.fillStyle = "#e8c99a"; g.beginPath(); g.ellipse(120, 250, 200, 40 + r() * 30, 0, 0, 7); g.fill(); }
+  else { g.fillRect(0, horizon + 20, 240, 240); g.fillStyle = "#0a1a1a"; for (let k = 0; k < 3; k++) { const x = 30 + r() * 180, h = 60 + r() * 60; g.fillRect(x, horizon + 20 - h, 6, h); g.beginPath(); g.ellipse(x + 3, horizon + 20 - h, 30, 10, r(), 0, 7); g.fill(); } }
+  return c.toDataURL("image/jpeg", .85);
+}
+const AV = {"Sam": "<svg viewBox=\"0 0 40 40\" width=\"22\" height=\"22\" class=\"shrink-0 rounded-full\"><circle cx=\"20\" cy=\"20\" r=\"20\" fill=\"hsl(276 70% 80%)\"/><g transform=\"rotate(326 20 20)\" fill=\"hsl(18 65% 62%)\" opacity=\"0.9\"><circle cx=\"8\" cy=\"10\" r=\"4\"/><circle cx=\"32\" cy=\"32\" r=\"5\"/></g><text x=\"20\" y=\"21\" text-anchor=\"middle\" dominant-baseline=\"central\" font-size=\"14\" font-weight=\"600\" fill=\"#0a0a0a\">SA</text></svg>", "Riya": "<svg viewBox=\"0 0 40 40\" width=\"22\" height=\"22\" class=\"shrink-0 rounded-full\"><circle cx=\"20\" cy=\"20\" r=\"20\" fill=\"hsl(243 70% 80%)\"/><g transform=\"rotate(355 20 20)\" fill=\"hsl(319 65% 62%)\" opacity=\"0.9\"><rect x=\"-4\" y=\"26\" width=\"48\" height=\"10\"/></g><text x=\"20\" y=\"21\" text-anchor=\"middle\" dominant-baseline=\"central\" font-size=\"14\" font-weight=\"600\" fill=\"#0a0a0a\">RI</text></svg>", "Arjun": "<svg viewBox=\"0 0 40 40\" width=\"22\" height=\"22\" class=\"shrink-0 rounded-full\"><circle cx=\"20\" cy=\"20\" r=\"20\" fill=\"hsl(191 70% 80%)\"/><g transform=\"rotate(164 20 20)\" fill=\"hsl(284 65% 62%)\" opacity=\"0.9\"><circle cx=\"8\" cy=\"10\" r=\"4\"/><circle cx=\"32\" cy=\"32\" r=\"5\"/></g><text x=\"20\" y=\"21\" text-anchor=\"middle\" dominant-baseline=\"central\" font-size=\"14\" font-weight=\"600\" fill=\"#0a0a0a\">AR</text></svg>"};
+const AVS = [AV.Sam, AV.Riya, AV.Arjun];
+const PHOTOS = Array.from({ length: 36 }, (_, i) => makePhoto(i));
+const photo = (i) => `url(${PHOTOS[i % PHOTOS.length]})`;
+
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const eo = (x) => 1 - Math.pow(1 - x, 3);
+const eio = (x) => (x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const back = (x) => { const c = 1.6; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+function set(el, { o = 1, x = 0, y = 0, s = 1, r = 0, blur = 0 } = {}) {
+  el.style.opacity = o; el.style.transform = `translate(${x}px,${y}px) scale(${s}) rotate(${r}deg)`;
+  el.style.filter = blur ? `blur(${blur}px)` : ""; el.style.visibility = o <= 0.001 ? "hidden" : "visible";
+}
+const inUp = (t, a, d = .45, dist = 40) => { const p = eo(seg(t, a, a + d)); return { o: p, y: (1 - p) * dist }; };
+
+// ---------- build repeated parts ----------
+const grid1 = $("#grid1");
+const ORDER1 = Array.from({ length: 121 }, (_, i) => i).sort((a, b) => ((a * 37) % 121) - ((b * 37) % 121));
+for (let i = 0; i < 121; i++) { const d = document.createElement("div"); d.className = "ph"; d.style.cssText = "aspect-ratio:1;border-radius:8px"; d.style.backgroundImage = photo(i * 5 + 3); grid1.appendChild(d); }
+const tiles1 = [...grid1.children];
+const grid6 = $("#grid6");
+for (let i = 0; i < 72; i++) { const d = document.createElement("div"); d.className = "ph"; d.style.cssText = "aspect-ratio:1;border-radius:8px"; d.style.backgroundImage = photo(i * 3 + 1); grid6.appendChild(d); }
+const tiles6 = [...grid6.children];
+
+// UploadProgressCard (src/components/ui/progress-card.tsx)
+const FILES = [["IMG_4021.HEIC", 3.4], ["IMG_4022.HEIC", 2.9], ["IMG_4023.HEIC", 4.1]];
+const cardsEl = $("#cards");
+FILES.forEach(([name, mb], i) => {
+  cardsEl.insertAdjacentHTML("beforeend", `<li><div class="card flex w-full items-center gap-3 rounded-lg border border-hairline bg-canvas p-4 text-ink">
+    <div class="ico grid size-11 shrink-0 place-items-center overflow-hidden rounded-sm bg-surface-card text-muted"><div class="thumb ph size-full" style="background-image:${photo(i + 2)}"></div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" class="check hidden size-6"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="min-w-0 flex-1 space-y-2"><p class="truncate text-sm font-medium">${name}</p>
+      <div class="h-1.5 overflow-hidden rounded-full bg-surface-strong"><div class="bar h-full rounded-full bg-brand-teal"></div></div>
+      <div class="flex justify-between gap-x-3 text-xs text-muted"><span class="size"></span><span class="lbl"></span></div></div></div></li>`);
+});
+const cards = $$(".card", cardsEl);
+
+// Gallery devices
+const DEVICES = [
+  { id: "dev1", kind: "phone", label: (n) => `Save ${n} to Photos`, zip: true },
+  { id: "dev2", kind: "phone android", label: (n) => `Download ${n} photos`, zip: true },
+  { id: "dev3", kind: "laptop", label: (n) => `Download ${n} as ZIP`, zip: false },
+];
+const SELECT = [0, 4, 2, 7, 5, 9, 1, 11, 6, 10, 3, 8];
+for (const dv of DEVICES) {
+  const host = $("#" + dv.id);
+  host.innerHTML = dv.kind === "laptop"
+    ? `<div class="laptop"><div class="lid"><div class="screen"></div></div><div class="base"></div></div>`
+    : `<div class="phone ${dv.kind}" style="position:relative"><div class="screen"><div class="notch"></div></div></div>`;
+  const screen = $(".screen", host);
+  screen.appendChild($("#galleryTpl").content.cloneNode(true));
+  $(".cover", screen).style.backgroundImage = photo(0);
+  if (dv.kind === "laptop") {
+    const sec = $("section", screen); sec.className = "mx-auto max-w-[780px] space-y-4 px-0 pt-6";
+    $(".relative", sec).className = "relative h-44 overflow-hidden rounded-xl bg-brand-teal";
+    $(".tiles", sec).className = "tiles grid grid-cols-6 gap-1.5";
+    $(".zip", screen).remove();
+    $(".primary", screen).parentElement.className = "absolute inset-x-0 bottom-0 z-40 border-t border-hairline bg-canvas/95 px-10 pt-3 pb-4";
+  }
+  const ul = $(".tiles", screen), n = dv.kind === "laptop" ? 24 : 15;
+  for (let i = 0; i < n; i++) ul.insertAdjacentHTML("beforeend", `<li><span class="relative block aspect-square w-full overflow-hidden bg-surface-strong ${dv.kind === "laptop" ? "rounded-sm" : ""}">
+    <span class="img ph block size-full" style="background-image:${photo(i * 2 + 5)}"></span>
+    <span class="absolute bottom-1.5 left-1.5 rounded-full ring-2 ring-white/90">${AVS[i % 3]}</span>
+    <span class="chk absolute top-1.5 right-1.5 grid size-6 place-items-center rounded-full border-2 border-white text-xs text-white shadow-sm bg-black/25"></span></span></li>`);
+  dv.screen = screen; dv.tiles = $$("li", ul);
+  if (dv.kind === "laptop") host.style.transform = "scale(1.02)";
+}
+
+// ---------- the timeline: every frame is a pure function of t ----------
+const DUR = 25;
+window.renderAt = function (T) {
+  const t = T;
+  // Scene 1: hook (0 - 2.8)
+  const s1 = $("#s1"), s1out = eio(seg(t, 2.4, 2.75));
+  set(s1, { o: 1 - s1out, s: 1 - .04 * s1out });
+  tiles1.forEach((el, i) => {
+    const k = ORDER1.indexOf(i), visible = k < 116;
+    const p = visible ? back(seg(t, .05 + k * .011, .05 + k * .011 + .3)) : 0;
+    set(el, { o: clamp(p * 2), s: .4 + .6 * p });
+  });
+  $("#count").textContent = Math.round(116 * eo(seg(t, .05, 1.45)));
+  set($("#s1sub"), inUp(t, .9));
+
+  // Scene 2: problem (2.8 - 5.4)
+  const s2 = $("#s2"), s2in = seg(t, 2.65, 2.7), s2out = eio(seg(t, 5.2, 5.5));
+  set(s2, { o: s2in * (1 - s2out), y: -30 * s2out });
+  $$(".prob").forEach((el, i) => {
+    const p = back(seg(t, 2.7 + i * .2, 3.15 + i * .2));
+    set(el, { o: clamp(p * 2), y: (1 - p) * 80, s: .9 + .1 * p, r: (1 - p) * (i - 1) * 4 });
+  });
+  $$(".strike").forEach((el, i) => { const p = back(seg(t, 3.1 + i * .2, 3.4 + i * .2)); set(el, { o: clamp(p * 2), s: .6 + .4 * p }); });
+  set($("#s2line"), inUp(t, 3.1, .45));
+
+  // Scene 3 + 4: phone (5.4 - 13.0)
+  const s34 = $("#s34"), s34in = eo(seg(t, 5.45, 5.95)), s34out = eio(seg(t, 12.75, 13.1));
+  set(s34, { o: (t >= 5.45 ? 1 : 0) * (1 - s34out), s: 1 - .03 * s34out });
+  set($("#phone3"), { o: s34in, y: (1 - s34in) * 160, s: 1.22 });
+  set($("#brand3"), inUp(t, 5.5));
+  const h3out = eio(seg(t, 9.45, 9.7));
+  set($("#h3"), { o: eo(seg(t, 5.6, 6.05)) * (1 - h3out), y: (1 - eo(seg(t, 5.6, 6.05))) * 40 - 30 * h3out });
+  set($("#h4"), inUp(t, 9.75));
+  set($("#devCard"), inUp(t, 11.0, .5));
+
+  // uploader
+  const up = seg(t, 5.9, 8.7), pct = eio(up);
+  $("#obar").style.width = (pct * 100).toFixed(2) + "%";
+  $("#sent").textContent = pct < .52 ? Math.round(pct * 1946) + " MB" : (pct * 1.9).toFixed(1) + " GB";
+  const done = Math.round(116 * pct); $("#done").textContent = done;
+  cards.forEach((c, i) => {
+    const p = clamp(seg(t, 5.9 + i * .45, 7.2 + i * .45)), complete = p >= 1, mb = FILES[i][1];
+    $(".bar", c).style.width = (complete ? 100 : Math.round(p * 100)) + "%";
+    $(".thumb", c).style.display = complete ? "none" : "block";
+    $(".check", c).classList.toggle("hidden", !complete);
+    $(".ico", c).className = `ico grid size-11 shrink-0 place-items-center overflow-hidden rounded-sm ${complete ? "bg-brand-mint/40 text-brand-teal" : "bg-surface-card text-muted"}`;
+    c.classList.toggle("border-brand-teal/30", complete); c.classList.toggle("border-hairline", !complete);
+    $(".size", c).textContent = complete ? `${mb} MB` : `${(mb * p).toFixed(1)} MB of ${mb} MB`;
+    $(".lbl", c).textContent = complete ? "Complete" : `Uploading · ${Math.round(p * 100)}%`;
+    $(".lbl", c).className = "lbl " + (complete ? "text-brand-teal" : "");
+  });
+  const name = "Goa trip", nt = Math.round(name.length * seg(t, 6.3, 7.3));
+  $("#typed").textContent = name.slice(0, nt);
+  $("#caret").style.opacity = (Math.floor(t * 2.5) % 2 === 0 || (t > 6.3 && t < 7.3)) && t < 8.8 ? 1 : 0;
+  const btn = $("#createBtn");
+  if (pct < 1) { btn.textContent = `Uploading ${done} of 116… keep this page open`; btn.className = "h-12 w-full rounded-md bg-surface-strong text-[15px] font-semibold text-muted"; }
+  else { btn.textContent = t < 9.15 ? "Create link" : "Creating link…"; btn.className = "h-12 w-full rounded-md bg-primary text-[15px] font-semibold text-white"; }
+  // screen swap: uploader out, share card in (staggered, no double exposure)
+  const uo = eio(seg(t, 9.3, 9.5)), si = eo(seg(t, 9.5, 9.85));
+  set($("#upl"), { o: 1 - uo, y: -20 * uo });
+  set($("#share"), { o: si, y: (1 - si) * 30 });
+  const copied = t >= 11.25;
+  $("#copyBtn").textContent = copied ? "Copied" : "Copy link";
+  // taps: Create link at 9.0, Copy link at 11.2
+  const tap = $("#tap3");
+  const tapAt = (at, x, y) => { const p = seg(t, at - .25, at + .3); return p > 0 && p < 1 ? { x, y, p } : null; };
+  const tp = tapAt(9.05, 195, 795) || tapAt(11.25, 100, 425);
+  if (tp) { tap.style.left = tp.x + "px"; tap.style.top = tp.y + "px"; const press = tp.p < .45 ? eo(tp.p / .45) : 1; set(tap, { o: tp.p < .45 ? press : 1 - eo((tp.p - .45) / .55), s: tp.p < .45 ? 1.4 - .5 * press : .9 + .6 * (tp.p - .45) }); }
+  else set(tap, { o: 0 });
+
+  // Scene 5: any device (17.4 - 20.9), authored in local time t5
+  { const t = T - 4.4;
+  const s5 = $("#s5"), s5out = eio(seg(t, 16.15, 16.45));
+  set(s5, { o: (t >= 13.05 ? 1 : 0) * (1 - s5out), s: 1 - .03 * s5out });
+  set($("#h5"), inUp(t, 13.1, .45));
+  DEVICES.forEach((dv, i) => {
+    const p = eo(seg(t, 13.2 + i * .15, 13.75 + i * .15));
+    const host = $("#" + dv.id), sc = dv.kind === "laptop" ? .98 : .95;
+    host.style.opacity = p; host.style.transform = `translateY(${(1 - p) * 140}px) scale(${sc})`;
+    const nSel = Math.round(12 * seg(t, 14.0, 15.4));
+    $(".nsel", dv.screen).textContent = nSel;
+    dv.tiles.forEach((li, j) => {
+      const k = SELECT.indexOf(j), on = k >= 0 && k < nSel;
+      const pp = k >= 0 ? eo(seg(t, 14.0 + k * (1.4 / 12), 14.0 + k * (1.4 / 12) + .2)) : 0;
+      $(".img", li).style.transform = `scale(${1 - .14 * pp})`; $(".img", li).style.borderRadius = pp > 0 ? "8px" : "0";
+      const chk = $(".chk", li); chk.textContent = on ? "✓" : ""; chk.classList.toggle("bg-brand-teal", on); chk.classList.toggle("bg-black/25", !on);
+    });
+    $(".primary", dv.screen).textContent = dv.label(nSel || "all 158");
+    const z = $(".zip", dv.screen); if (z) z.textContent = `Download ${nSel || "all"} as one ZIP file`;
+  });
+
+  }
+  // Scene 6: auto-delete + outro (20.8 - 25), authored in local time
+  { const t = T - 4.0;
+  const s6 = $("#s6");
+  set(s6, { o: t >= 16.85 ? 1 : 0 });
+  tiles6.forEach((el, i) => {
+    const pin = eo(seg(t, 16.85 + (i % 12) * .015, 17.25 + (i % 12) * .015));
+    const k = (i * 29) % 72, pout = eio(seg(t, 17.35 + k * .009, 17.65 + k * .009));
+    set(el, { o: pin * (1 - pout), s: (.92 + .08 * pin) * (1 - .6 * pout), y: -20 * pout });
+  });
+  const pillIn = back(seg(t, 16.95, 17.35)), pillOut = eio(seg(t, 18.3, 18.55));
+  set($("#pill6"), { o: clamp(pillIn * 2) * (1 - pillOut), s: (.85 + .15 * pillIn) * (1 - .1 * pillOut) });
+  $("#hand").setAttribute("transform", `rotate(${-360 * eio(seg(t, 17.1, 18.2))} 12 12)`);
+  const endIn = eo(seg(t, 18.55, 19.1));
+  set($("#end"), { o: endIn, y: (1 - endIn) * 30, s: .96 + .04 * endIn });
+  set($("#tag"), inUp(t, 18.85, .5, 24));
+  }
+  renderCollab(T);
+};
+// ---------- collaboration scene (12.95 - 17.4) ----------
+$$(".cover7").forEach((el) => (el.style.backgroundImage = photo(0)));
+for (let i = 0; i < 9; i++) $("#gTiles").insertAdjacentHTML("beforeend", `<li class="relative"><span class="relative block aspect-square w-full overflow-hidden bg-surface-strong"><span class="ph block size-full" style="background-image:${photo(i * 2 + 5)}"></span>
+  <span class="av absolute bottom-1.5 left-1.5 rounded-full ring-2 ring-white/90">${AV.Sam}</span></span></li>`);
+const gTiles = $$("#gTiles li");
+const onBlock = $("#onBlock"), onH = onBlock.scrollHeight;
+function tapOn(tapEl, target, screen, scale, at, t) {
+  const p = seg(t, at - .25, at + .3);
+  if (!(p > 0 && p < 1)) return false;
+  const r = target.getBoundingClientRect(), sr = screen.getBoundingClientRect();
+  tapEl.style.left = (r.left + r.width / 2 - sr.left) / scale + "px"; tapEl.style.top = (r.top + r.height / 2 - sr.top) / scale + "px";
+  const press = p < .45 ? eo(p / .45) : 1;
+  set(tapEl, { o: p < .45 ? press : 1 - eo((p - .45) / .55), s: p < .45 ? 1.4 - .5 * press : .9 + .6 * (p - .45) });
+  return true;
+}
+function renderCollab(t) {
+  const s7 = $("#s7"), out = eio(seg(t, 17.05, 17.4));
+  set(s7, { o: (t >= 12.95 ? 1 : 0) * (1 - out), s: 1 - .03 * out });
+  set($("#h7a"), inUp(t, 13.0, .45)); set($("#h7b"), inUp(t, 13.25, .45));
+  const op = eo(seg(t, 13.0, 13.5)), gp = eo(seg(t, 13.2, 13.7));
+  set($("#ownerPhone"), { o: op, y: (1 - op) * 160 });
+  set($("#guestPhone"), { o: gp, y: (1 - gp) * 160, s: 1.1 });
+  // owner flips the switch at 13.85
+  const on = t >= 13.85, sw = eo(seg(t, 13.85, 14.05));
+  $("#knob7").style.left = 4 + 20 * sw + "px";
+  $("#track7").className = `relative h-7 w-12 shrink-0 rounded-full ${on ? "bg-brand-teal" : "bg-surface-strong"}`;
+  $("#switchTxt").textContent = on ? "On: anyone with the link joins with their name and uploads." : "Off: the link is view and download only.";
+  $("#collabDot").style.opacity = on ? 1 : 0;
+  onBlock.style.height = onH * eio(seg(t, 13.95, 14.35)) + "px"; onBlock.style.opacity = eo(seg(t, 14.05, 14.4));
+  const contrib = $$(".contrib");
+  [16.45, 16.75].forEach((at, i) => { const p = eo(seg(t, at, at + .3)); contrib[i].style.display = t >= at ? "flex" : "none"; contrib[i].style.opacity = p; contrib[i].style.transform = `translateX(${(1 - p) * 20}px)`; });
+  if (!tapOn($("#tapO"), $("#track7"), $("#ownerPhone .screen"), 1, 13.85, t)) set($("#tapO"), { o: 0 });
+  // guest types a name, joins, uploads
+  const name = "Riya", nt = Math.round(name.length * seg(t, 14.1, 14.6));
+  $("#gName").textContent = name.slice(0, nt); $("#gPh").style.display = nt ? "none" : "inline";
+  $("#gCaret").style.opacity = t > 14.0 && t < 14.85 && (t < 14.6 || Math.floor(t * 2.5) % 2 === 0) ? 1 : 0;
+  const joined = eo(seg(t, 14.95, 15.25));
+  set($("#joinCard"), { o: 1 - eio(seg(t, 14.85, 15.0)), y: -10 * seg(t, 14.85, 15.0) });
+  set($("#guestActions"), { o: joined, y: (1 - joined) * 16 });
+  const gScreen = $("#guestPhone .screen");
+  if (!tapOn($("#tapG"), $("#joinBtn"), gScreen, 1.1, 14.75, t) && !tapOn($("#tapG"), $("#addBtn"), gScreen, 1.1, 15.4, t)) set($("#tapG"), { o: 0 });
+  const tr = eio(seg(t, 15.55, 16.35)), trayIn = eo(seg(t, 15.5, 15.75)), trayOut = eio(seg(t, 16.4, 16.6));
+  set($("#gTray"), { o: trayIn * (1 - trayOut), y: (1 - trayIn) * 40 + trayOut * 40 });
+  $("#trayBar").style.width = tr * 100 + "%";
+  $("#traySize").textContent = `${Math.round(81 * tr)} MB / 81 MB`;
+  const added = t >= 16.4;
+  set($("#chips7"), { o: eo(seg(t, 16.45, 16.7)) });
+  $("#gMeta").textContent = added ? "140 photos · 2 people · 1.7 GB · deleted in 3 days" : "116 photos · 1.4 GB · deleted in 3 days";
+  gTiles.forEach((li, i) => { $(".av", li).innerHTML = added && i < 3 ? AV.Riya : AV.Sam; const p = added && i < 3 ? back(seg(t, 16.45 + i * .06, 16.75 + i * .06)) : 1; li.style.transform = `scale(${.6 + .4 * p})`; li.style.opacity = clamp(p * 2); });
+  gTiles.forEach((li, i) => { if (added && i < 3) $(".ph", li).style.backgroundImage = photo(30 + i); });
+  const ti = eo(seg(t, 16.45, 16.65)), to = eio(seg(t, 17.0, 17.15));
+  set($("#gToast"), { o: ti * (1 - to), y: (1 - ti) * -12 });
+}
+window.DUR = DUR;
+window.ready = document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => r(true))));
+const q = new URLSearchParams(location.search); if (q.has("t")) window.renderAt(+q.get("t"));
+</script>
+</body>
+</html>

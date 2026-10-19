@@ -14,6 +14,20 @@ export const auth = betterAuth({
   emailAndPassword: { enabled: true, minPasswordLength: 8 },
   // Stay signed in 7 days; each day of use pushes expiry forward again (sliding session).
   session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
+  // DB storage: in-memory limits don't hold on serverless (each instance has its own memory).
+  rateLimit: {
+    enabled: true,
+    storage: "database",
+    customRules: {
+      "/sign-in/email": { window: 15 * 60, max: 10 }, // password guessing
+      "/sign-up/email": { window: 60 * 60, max: 10 },
+    },
+  },
+  account: {
+    // Sign-ups don't verify email ownership, so never auto-attach a Google login to an existing
+    // same-email account (pre-registration account takeover). Users link explicitly when signed in.
+    accountLinking: { disableImplicitLinking: true },
+  },
   socialProviders: googleEnabled
     ? { google: { clientId: env.GOOGLE_CLIENT_ID!, clientSecret: env.GOOGLE_CLIENT_SECRET! } }
     : {},

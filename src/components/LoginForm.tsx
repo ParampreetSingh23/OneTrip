@@ -3,12 +3,13 @@
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { safeNext } from "@/lib/safe-next";
 
 const input = "h-11 w-full rounded-md border border-hairline bg-canvas px-4 text-ink outline-none focus:border-ink";
 
 export default function LoginForm({ google }: { google: boolean }) {
-  const raw = useSearchParams().get("next") ?? "";
-  const next = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/dashboard"; // no open redirects
+  const rawNext = useSearchParams().get("next");
+  const next = () => safeNext(rawNext, location.origin); // no open redirects (//x, /\x, …)
   const [mode, setMode] = useState<"in" | "up">("in");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -26,7 +27,7 @@ export default function LoginForm({ google }: { google: boolean }) {
       setError(error.message ?? "Something went wrong");
       setPending(false);
     } else {
-      location.assign(next); // full load so server components see the new cookie
+      location.assign(next()); // full load so server components see the new cookie
     }
   }
 
@@ -42,7 +43,7 @@ export default function LoginForm({ google }: { google: boolean }) {
       {google && (
         <>
           <button
-            onClick={() => authClient.signIn.social({ provider: "google", callbackURL: next })}
+            onClick={() => authClient.signIn.social({ provider: "google", callbackURL: next() })}
             className="flex h-12 items-center justify-center gap-2 rounded-md border border-hairline bg-canvas text-[15px] font-semibold text-ink"
           >
             <svg viewBox="0 0 24 24" className="size-5" aria-hidden>
