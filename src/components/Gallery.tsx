@@ -205,6 +205,7 @@ export default function Gallery({
   const uploading = up.items.length > 0 || up.skipped > 0;
 
   return (
+    <>
     <section className={`space-y-6 ${allPhotos.length || uploading ? (download ? "pb-72" : "pb-40") : "pb-10"}`}>
       {/* ---------- Cover ---------- */}
       <div className="relative -mx-4 h-64 overflow-hidden bg-brand-teal sm:mx-0 sm:h-80 sm:rounded-xl">
@@ -365,6 +366,10 @@ export default function Gallery({
         </div>
       )}
 
+    </section>
+
+      {/* Overlays live outside the spaced <section>: Tailwind's space-y-* adds margin to children,
+          which shifts position:fixed elements (the bottom bar floated 24px up). */}
       {/* ---------- Sticky bottom: uploads + downloads ---------- */}
       {(allPhotos.length > 0 || uploading) && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-hairline bg-canvas/95 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur">
@@ -455,7 +460,7 @@ export default function Gallery({
       )}
 
       {saveIds && <SaveToPhotos token={token} ids={saveIds} photos={photos} onClose={() => setSaveIds(null)} />}
-    </section>
+    </>
   );
 }
 
