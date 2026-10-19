@@ -13,6 +13,9 @@ const s3 = new S3Client({
   region: "auto",
   endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
   credentials: { accessKeyId: env.R2_ACCESS_KEY_ID, secretAccessKey: env.R2_SECRET_ACCESS_KEY },
+  // SDK default signs a CRC32 of the (empty) body into presigned PUT URLs; browsers send the real file.
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
 });
 const Bucket = env.R2_BUCKET;
 
