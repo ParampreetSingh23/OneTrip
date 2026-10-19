@@ -2,27 +2,30 @@ import { downloadZip } from "client-zip";
 import type { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { HttpError, route } from "@/lib/http";
-import { uniqueNames } from "@/lib/photos";
+import { zipPaths } from "@/lib/photos";
 import { getObjectStream, originalKey } from "@/lib/r2";
 import { viewerAlbum } from "@/lib/viewer";
 
 // ponytail: originals stream through the server (Vercel bandwidth + 300s cap ≈ a few GB). Move to a Worker if albums get bigger.
 export const maxDuration = 300;
 
-/** Streamed, uncompressed (store) ZIP of originals: selected ids from the form, or the whole album. */
+/** Streamed, uncompressed (store) ZIP of originals: selected ids from the form, or the whole album. Per-person folders when several people uploaded. */
 export const POST = route(async (req: NextRequest, ctx: RouteContext<"/api/a/[token]/zip">) => {
   const { token } = await ctx.params;
-  const album = await viewerAlbum(token, (n) => req.cookies.get(n)?.value);
+  const album = await viewerAlbum(token, req);
   if (!album) throw new HttpError(404, "Not found");
 
   const ids = (await req.formData()).getAll("id").map(String).slice(0, 1000);
   const assets = await db.asset.findMany({
     where: { albumId: album.id, uploaded: true, ...(ids.length && { id: { in: ids } }) },
     orderBy: { createdAt: "asc" },
+    include: { contributor: { select: { id: true, name: true } } },
   });
   if (!assets.length) throw new HttpError(404, "No photos");
 
-  const names = uniqueNames(assets.map((a) => a.filename));
+  // Several uploaders (collaboration) → one folder per person.
+  const owner = { id: "owner", name: (await db.user.findUnique({ where: { id: album.userId }, select: { name: true } }))?.name ?? "Owner" };
+  const names = zipPaths(assets.map((a) => ({ filename: a.filename, by: a.contributor ?? owner })));
   const meta = assets.map((a, i) => ({ name: names[i], size: a.sizeBytes, lastModified: a.createdAt }));
   async function* files() {
     for (const [i, a] of assets.entries()) {

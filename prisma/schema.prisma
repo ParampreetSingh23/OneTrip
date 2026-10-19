@@ -79,33 +79,50 @@ enum AlbumStatus {
 }
 
 model Album {
-  id            String      @id @default(cuid())
+  id            String        @id @default(cuid())
   userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   title         String
-  tokenHash     String      @unique // sha256(share token): lookup for viewers
+  tokenHash     String        @unique // sha256(share token): lookup for viewers
   shareTokenEnc String // AES-GCM(share token): lets the owner see the link again
   passwordHash  String? // scrypt, optional
-  status        AlbumStatus @default(DRAFT)
+  status        AlbumStatus   @default(DRAFT)
+  collaborative Boolean       @default(false) // anyone with the link may join with a name and upload
   expiresAt     DateTime
-  createdAt     DateTime    @default(now())
+  createdAt     DateTime      @default(now())
   assets        Asset[]
+  contributors  Contributor[]
 
   @@index([expiresAt])
   @@index([userId, createdAt])
 }
 
-// R2 keys are derived from ids (see src/lib/r2.ts), not stored.
-model Asset {
+// Guest uploader in a collaborative album. No account: identity = random key in an httpOnly cookie.
+model Contributor {
   id        String   @id @default(cuid())
   albumId   String
   album     Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
-  filename  String
-  mimeType  String
-  sizeBytes Int
-  hasThumb  Boolean  @default(false)
-  uploaded  Boolean  @default(false)
+  name      String
+  keyHash   String   @unique // sha256 of the browser's key
   createdAt DateTime @default(now())
+  assets    Asset[]
+
+  @@index([albumId])
+}
+
+// R2 keys are derived from ids (see src/lib/r2.ts), not stored.
+model Asset {
+  id            String       @id @default(cuid())
+  albumId       String
+  album         Album        @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  contributorId String? // null = uploaded by the album owner
+  contributor   Contributor? @relation(fields: [contributorId], references: [id], onDelete: Cascade)
+  filename      String
+  mimeType      String
+  sizeBytes     Int
+  hasThumb      Boolean      @default(false)
+  uploaded      Boolean      @default(false)
+  createdAt     DateTime     @default(now())
 
   @@index([albumId])
 }

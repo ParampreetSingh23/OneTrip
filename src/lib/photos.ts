@@ -38,3 +38,24 @@ export function uniqueNames(names: string[]): string[] {
     return candidate;
   });
 }
+
+/**
+ * ZIP entry paths. One uploader → flat names. Several → one folder per person ("Riya/IMG_1.jpg"),
+ * two different people with the same name get "Riya" and "Riya (2)".
+ */
+export function zipPaths(items: { filename: string; by: { id: string; name: string } }[]): string[] {
+  const ids = [...new Set(items.map((i) => i.by.id))];
+  if (ids.length < 2) return uniqueNames(items.map((i) => i.filename));
+
+  const folderNames = uniqueNames(
+    ids.map((id) => safeFilename(items.find((i) => i.by.id === id)!.by.name.replace(/[\\/]/g, "-")).replace(/^\.+/, "") || "Someone"),
+  );
+  const folder = new Map(ids.map((id, k) => [id, folderNames[k]]));
+  const out: string[] = new Array(items.length);
+  for (const id of ids) {
+    const idx = items.flatMap((it, k) => (it.by.id === id ? [k] : []));
+    const names = uniqueNames(idx.map((k) => items[k].filename));
+    idx.forEach((k, j) => (out[k] = `${folder.get(id)}/${names[j]}`));
+  }
+  return out;
+}

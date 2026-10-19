@@ -1,24 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { type Expiry, photoMime } from "@/lib/photos";
-import { ApiError, api, formatBytes, makeThumb, putFile, sleep } from "@/lib/upload-client";
+import { useRef, useState } from "react";
+import type { Expiry } from "@/lib/photos";
+import { api, formatBytes } from "@/lib/upload-client";
+import { useUploads } from "@/lib/use-uploads";
 import { UploadProgressCard } from "@/components/ui/progress-card";
+import QrShare from "@/components/QrShare";
 
-const CONCURRENCY = 4;
-const AUTO_RETRIES = 3;
 const EXPIRY_LABEL: Record<Expiry, string> = { "24h": "24 hours", "3d": "3 days", "7d": "7 days" };
 
-type Status = "queued" | "uploading" | "done" | "failed";
-type Item = { id: number; name: string; size: number; status: Status; progress: number; preview?: string; error?: string };
-type Session = { albumId: string };
-type Grant = { assetId: string; url: string; contentType: string; thumbUrl: string | null };
-type Entry = { file: File; thumb?: Blob | null; grant?: Grant };
 
+/** New collection: pick photos, name it, choose expiry/password, get the link. */
 export default function Uploader() {
-  const [items, setItems] = useState<Item[]>([]);
-  const [skipped, setSkipped] = useState(0);
   const [title, setTitle] = useState("");
   const [expiry, setExpiry] = useState<Expiry>("3d");
   const [usePassword, setUsePassword] = useState(false);
@@ -27,92 +21,16 @@ export default function Uploader() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ url: string; photoCount: number; expiry: Expiry; title: string } | null>(null);
 
-  // Upload machinery lives in refs; only display state goes through React.
-  const entries = useRef(new Map<number, Entry>());
-  const queue = useRef<number[]>([]);
-  const active = useRef(0);
-  const nextId = useRef(0);
-  const session = useRef<Promise<Session> | null>(null);
-
-  const patch = (id: number, p: Partial<Item>) =>
-    setItems((list) => list.map((i) => (i.id === id ? { ...i, ...p } : i)));
-
+  // Draft collection is created on the first upload, then reused.
+  const session = useRef<Promise<{ albumId: string }> | null>(null);
   const getSession = () =>
-    (session.current ??= api<Session>("/api/albums").catch((e) => {
+    (session.current ??= api<{ albumId: string }>("/api/albums").catch((e) => {
       session.current = null;
       throw e;
     }));
-
-  async function uploadOne(id: number) {
-    const entry = entries.current.get(id)!;
-    patch(id, { status: "uploading", progress: 0, error: undefined });
-    if (entry.thumb === undefined) {
-      entry.thumb = await makeThumb(entry.file);
-      if (entry.thumb) patch(id, { preview: URL.createObjectURL(entry.thumb) });
-    }
-    for (let attempt = 1; ; attempt++) {
-      try {
-        const s = await getSession();
-        if (!entry.grant) {
-          const { uploads } = await api<{ uploads: Grant[] }>(`/api/albums/${s.albumId}/uploads`, {
-            body: { files: [{ name: entry.file.name, type: entry.file.type, size: entry.file.size, thumbSize: entry.thumb?.size }] },
-          });
-          entry.grant = uploads[0];
-        }
-        const g = entry.grant;
-        if (g.thumbUrl && entry.thumb) await putFile(g.thumbUrl, entry.thumb, "image/jpeg");
-        await putFile(g.url, entry.file, g.contentType, (p) => patch(id, { progress: p }));
-        patch(id, { status: "done", progress: 1 });
-        return;
-      } catch (e) {
-        const permanent = e instanceof ApiError && e.status < 500; // limits, bad type, expired session
-        if (permanent || attempt >= AUTO_RETRIES) {
-          patch(id, { status: "failed", error: (e as Error).message });
-          return;
-        }
-        await sleep(1000 * 2 ** (attempt - 1));
-      }
-    }
-  }
-
-  function pump() {
-    while (active.current < CONCURRENCY && queue.current.length) {
-      const id = queue.current.shift()!;
-      active.current++;
-      uploadOne(id).finally(() => {
-        active.current--;
-        pump();
-      });
-    }
-  }
-
-  function addFiles(list: FileList | File[]) {
-    const added: Item[] = [];
-    let rejected = 0;
-    for (const file of Array.from(list)) {
-      if (!file.size || !photoMime(file.name, file.type)) {
-        rejected++;
-        continue;
-      }
-      const id = nextId.current++;
-      entries.current.set(id, { file });
-      queue.current.push(id);
-      added.push({ id, name: file.name, size: file.size, status: "queued", progress: 0 });
-    }
-    setSkipped((n) => n + rejected);
-    setItems((l) => [...l, ...added]);
-    pump();
-  }
-
-  function retryFailed(id?: number) {
-    for (const i of items) {
-      if (i.status !== "failed" || (id !== undefined && i.id !== id)) continue;
-      entries.current.get(i.id)!.grant = undefined; // fresh URL in case the old one expired
-      queue.current.push(i.id);
-      patch(i.id, { status: "queued", progress: 0, error: undefined });
-    }
-    pump();
-  }
+  const { items, skipped, addFiles, retryFailed, done, failed, busy, totalBytes, sentBytes } = useUploads(
+    async () => `/api/albums/${(await getSession()).albumId}/uploads`,
+  );
 
   async function createLink() {
     setPublishing(true);
@@ -130,33 +48,7 @@ export default function Uploader() {
     }
   }
 
-  const done = items.filter((i) => i.status === "done").length;
-  const failed = items.filter((i) => i.status === "failed");
-  const busy = items.some((i) => i.status === "queued" || i.status === "uploading");
-  const totalBytes = items.reduce((s, i) => s + i.size, 0);
-  const sentBytes = items.reduce((s, i) => s + i.size * i.progress, 0);
   const passwordOk = !usePassword || password.length >= 4;
-
-  // Keep the screen awake and warn before leaving while uploads run (phones kill uploads on lock).
-  useEffect(() => {
-    if (!busy) return;
-    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
-    addEventListener("beforeunload", warn);
-    let lock: WakeLockSentinel | undefined;
-    let cancelled = false;
-    navigator.wakeLock
-      ?.request("screen")
-      .then((l) => {
-        if (cancelled) l.release();
-        else lock = l;
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-      removeEventListener("beforeunload", warn);
-      lock?.release();
-    };
-  }, [busy]);
 
   if (result) return <ShareCard {...result} />;
 
@@ -164,8 +56,12 @@ export default function Uploader() {
     return (
       <section className="flex flex-1 flex-col justify-center gap-8">
         <div className="space-y-2">
-          <h1 className="text-[40px] leading-[1.05] font-medium tracking-[-1.5px] text-ink">New collection</h1>
-          <p className="text-muted">Pick your photos. Originals are uploaded untouched.</p>
+          <h1 className="text-[40px] leading-[1.05] font-medium tracking-[-1.5px] break-words text-ink">
+            New collection
+          </h1>
+          <p className="text-muted">
+            Pick your photos. Originals are uploaded untouched.
+          </p>
         </div>
         <DropZone onFiles={addFiles} big />
         {skipped > 0 && <p className="text-sm text-error">{skipped} file(s) skipped: only JPEG, PNG, HEIC and WebP photos.</p>}
@@ -358,15 +254,22 @@ function ShareCard({ url, photoCount, expiry, title }: { url: string; photoCount
               Share…
             </button>
           )}
+          <QrShare url={url} title={title} label="Show QR code" className="col-span-2 h-11 rounded-md border border-white/40 text-sm font-semibold" />
         </div>
       </div>
       <ul className="space-y-2 text-sm text-muted">
         <li>Anyone with this link can view and download these photos until they expire.</li>
         <li>Originals are shared exactly as taken, including any location data stored in them.</li>
       </ul>
-      <Link href="/dashboard" className="inline-flex h-11 w-fit items-center rounded-md border border-hairline px-5 text-sm font-semibold text-ink">
-        Go to my collections
-      </Link>
+      <div className="flex flex-wrap gap-2">
+        <a href={url} className="inline-flex h-11 items-center rounded-md bg-primary px-5 text-sm font-semibold text-white">
+          Open collection
+        </a>
+        <Link href="/dashboard" className="inline-flex h-11 items-center rounded-md border border-hairline px-5 text-sm font-semibold text-ink">
+          My collections
+        </Link>
+      </div>
+      <p className="text-sm text-muted">Want friends to add their photos too? Open the collection and tap Collaborate.</p>
     </section>
   );
 }

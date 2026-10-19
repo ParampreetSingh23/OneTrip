@@ -51,3 +51,13 @@ label:has(input[type="file"]:focus-visible) {
   outline: 2px solid var(--color-brand-teal);
   outline-offset: 4px;
 }
+
+@keyframes sheet-in {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes toast-in {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}

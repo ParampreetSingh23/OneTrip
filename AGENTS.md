@@ -37,6 +37,7 @@ Next.js 16 (App Router) + TypeScript + Tailwind v4 · Better Auth (email/passwor
 - Expiry: every request checks `expiresAt > now`. Drafts get `expiresAt = now + 24h` so abandoned uploads expire by the same rule. Cron deletes R2 prefix then DB row (idempotent). R2 lifecycle rule (delete after 8 days) is the backstop.
 - Deletion guarantee: access stops at expiry instantly; `/api/cron/cleanup` (Vercel Cron, daily on Hobby) deletes files then rows, ≤200 albums/run, failures retried next run; R2 lifecycle (8 days) is the backstop.
 - Presigned URLs already issued stay valid ≤5 min.
+- Collaboration (`Album.collaborative`): same share link/QR; when on, anyone with it can join with a name (no account) and upload. Guest identity = random key in httpOnly cookie `oc_<albumId>`, sha256 in `Contributor.keyHash`; same browser = same person. `Asset.contributorId` null = owner. Owner toggles on/off (off freezes guest uploads; guests can still delete their own). Photos appear instantly; owner deletes anything, guests only their own. Per-guest cap `MAX_FILES_PER_GUEST` (200). Upload verification is scoped per uploader so concurrent guests don't drop each other's pending uploads. ZIPs use one folder per person when several people uploaded.
 - Uploader sessions: Better Auth, 7-day sliding expiry (refreshed daily on use).
 
 ## Security and reliability
@@ -50,7 +51,7 @@ Next.js 16 (App Router) + TypeScript + Tailwind v4 · Better Auth (email/passwor
 Mobile-first, accessible, few steps. Sender: Select → Upload → Expiry → Share. Recipient: Open → Browse → Select → Download. Warn that the link is a bearer credential unless a password is set.
 
 ## Non-goals (v1)
-Native apps, feeds/comments/likes, AI, payments, recipient accounts, public discovery, editing a published collection, collaborative uploads (v2 candidate).
+Native apps, feeds/comments/likes, AI, payments, recipient accounts, public discovery, separate view-only vs contribute links, revoking/regenerating links, removing contributors (not built).
 
 ## Rules for coding agents
 - Inspect before editing; keep existing structure.

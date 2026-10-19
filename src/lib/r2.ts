@@ -63,9 +63,8 @@ export async function listObjects(prefix: string) {
   return out;
 }
 
-/** Delete everything under prefix. Idempotent: safe to re-run after partial failure. */
-export async function deletePrefix(prefix: string) {
-  const keys = [...(await listObjects(prefix)).keys()];
+/** Delete specific keys (missing keys are fine). */
+export async function deleteKeys(keys: string[]) {
   for (let i = 0; i < keys.length; i += 1000) {
     const res = await s3.send(
       new DeleteObjectsCommand({
@@ -75,5 +74,11 @@ export async function deletePrefix(prefix: string) {
     );
     if (res.Errors?.length) throw new Error(`R2 delete failed for ${res.Errors.length} objects`);
   }
+}
+
+/** Delete everything under prefix. Idempotent: safe to re-run after partial failure. */
+export async function deletePrefix(prefix: string) {
+  const keys = [...(await listObjects(prefix)).keys()];
+  await deleteKeys(keys);
   return keys.length;
 }

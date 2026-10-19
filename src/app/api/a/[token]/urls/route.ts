@@ -10,7 +10,7 @@ const schema = z.object({ ids: z.array(z.string().max(40)).min(1).max(50) });
 /** Short-lived direct URLs for a batch of originals (browser fetches them for "Save to Photos"). */
 export const POST = route(async (req: NextRequest, ctx: RouteContext<"/api/a/[token]/urls">) => {
   const { token } = await ctx.params;
-  const album = await viewerAlbum(token, (n) => req.cookies.get(n)?.value);
+  const album = await viewerAlbum(token, req);
   if (!album) throw new HttpError(404, "Not found");
   const { ids } = await body(req, schema);
   const assets = await db.asset.findMany({

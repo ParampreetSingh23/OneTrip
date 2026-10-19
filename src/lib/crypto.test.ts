@@ -30,5 +30,7 @@ test("encrypt round-trips and rejects tampering or wrong key", () => {
   assert.equal(decrypt(s, sealed), tok);
   assert.throws(() => decrypt("z".repeat(32), sealed));
   const [iv, tag, data] = sealed.split(".");
-  assert.throws(() => decrypt(s, [iv, tag, data.slice(0, -2) + (data.endsWith("A") ? "BB" : "AA")].join(".")));
+  const flipped = Buffer.from(data, "base64url");
+  flipped[0] ^= 1; // flip a real bit (editing base64 text can hit ignored padding bits)
+  assert.throws(() => decrypt(s, [iv, tag, flipped.toString("base64url")].join(".")));
 });

@@ -13,6 +13,7 @@ const schema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   CRON_SECRET: z.string().min(16),
   MAX_FILES: z.coerce.number().int().positive().default(500),
+  MAX_FILES_PER_GUEST: z.coerce.number().int().positive().default(200), // per contributor in collaborations
   MAX_FILE_MB: z.coerce.number().positive().default(50),
   MAX_ALBUM_MB: z.coerce.number().positive().default(5000),
 });

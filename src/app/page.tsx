@@ -5,11 +5,7 @@ import Header from "@/components/Header";
 export default function Home() {
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-5 py-6 sm:px-8">
-      <Header>
-        <Link href="/dashboard" className="rounded-md px-3 py-2 text-muted hover:text-ink">
-          Sign in
-        </Link>
-      </Header>
+      <Header />
       <section className="flex flex-1 flex-col justify-center gap-8 py-12 sm:gap-10 sm:py-20">
         <div className="space-y-5">
           <h1 className="text-[44px] leading-[1.05] font-medium tracking-[-1.8px] text-ink sm:text-[64px] sm:tracking-[-2.5px]">

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { photoMime, safeFilename, uniqueNames } from "./photos.ts";
+import { photoMime, safeFilename, uniqueNames, zipPaths } from "./photos.ts";
 
 test("photoMime trusts allowed types, falls back to extension, rejects others", () => {
   assert.equal(photoMime("a.jpg", "image/jpeg"), "image/jpeg");
@@ -26,4 +26,20 @@ test("uniqueNames de-duplicates for ZIPs without touching unique names", () => {
     "noext",
     "noext (2)",
   ]);
+});
+
+test("zipPaths: flat for one uploader, per-person folders otherwise", () => {
+  const owner = { id: "owner", name: "Param" };
+  assert.deepEqual(zipPaths([{ filename: "a.jpg", by: owner }, { filename: "a.jpg", by: owner }]), ["a.jpg", "a (2).jpg"]);
+  const riya1 = { id: "c1", name: "Riya" }, riya2 = { id: "c2", name: "Riya" }, evil = { id: "c3", name: "../etc/x" };
+  assert.deepEqual(
+    zipPaths([
+      { filename: "IMG_1.jpg", by: owner },
+      { filename: "IMG_1.jpg", by: riya1 },
+      { filename: "IMG_1.jpg", by: riya1 },
+      { filename: "IMG_1.jpg", by: riya2 },
+      { filename: "x.jpg", by: evil },
+    ]),
+    ["Param/IMG_1.jpg", "Riya/IMG_1.jpg", "Riya/IMG_1 (2).jpg", "Riya (2)/IMG_1.jpg", "-etc-x/x.jpg"],
+  );
 });
